@@ -3,6 +3,7 @@ import asyncio
 from tcp import Servidor
 import re
 
+dicionario = {} #passo 4
 
 def validar_nome(nome):
     return re.match(br'^[a-zA-Z][a-zA-Z0-9_-]*$', nome) is not None
@@ -49,11 +50,22 @@ def dados_recebidos(conexao, dados):
 				print(conexao, msg)
 			#### passo 3 ####
 			if initial_msg == b'NICK':
-				if validar_nome( msg.split(b' ', 1)[1].rstrip(b'\r\n')): #verifica se o nome é valido, não pode ter o \r\n então é usado o strip
-					conexao.enviar(b':server 001 %s :Welcome\r\n' % msg.split(b' ', 1)[1].rstrip(b'\r\n')) #envia duas mensagens para mostrar que foi conectado, houve tratamento do \r\n
-					conexao.enviar(b':server 422 %s :MOTD File is missing\r\n' % msg.split(b' ', 1)[1].rstrip(b'\r\n'))
-				else: #envia mensagem para o caso de que não for conectado corretamente
-					conexao.enviar(b':server 432 * %s :Erroneous nickname\r\n' % msg.split(b' ', 1)[1].rstrip(b'\r\n'))
+				nick = msg.split(b' ', 1)[1].rstrip(b'\r\n').lower()
+				print(nick)
+				###passo 4###
+				if(nick in dicionario.keys()):
+						conexao.enviar(b':server 433 * %s :Nickname is already in use\r\n' % nick)
+						
+				else:
+					if validar_nome( nick): #verifica se o nome é valido, não pode ter o \r\n então é usado o strip
+						conexao.enviar(b':server 001 %s :Welcome\r\n' % nick) #envia duas mensagens para mostrar que foi conectado, houve tratamento do \r\n
+						conexao.enviar(b':server 422 %s :MOTD File is missing\r\n' % nick)
+
+					else: #envia mensagem para o caso de que não for conectado corretamente
+						conexao.enviar(b':server 432 * %s :Erroneous nickname\r\n' % nick)
+					dicionario[nick.lower()] = conexao
+									
+						
 
 		else:
 			dados_residuais = conexao.recuperar_dados()
@@ -72,3 +84,6 @@ def conexao_aceita(conexao):
 servidor = Servidor(6667)
 servidor.registrar_monitor_de_conexoes_aceitas(conexao_aceita)
 asyncio.get_event_loop().run_forever()
+
+
+#def troca_nomes(nomeAntigo, dados):
