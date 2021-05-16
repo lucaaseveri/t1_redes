@@ -20,7 +20,6 @@ def dados_recebidos(conexao, dados):
 	if dados == b'':
         	return sair(conexao)
        
-       
 	##### Tratamento dos dados
 	
 	for i in range(len(dados)): # Linhas que contem \n
@@ -45,25 +44,41 @@ def dados_recebidos(conexao, dados):
 
 			initial_msg = msg.split(b' ', 1)[0]
 			
+			#### passo 1 ####
 			if initial_msg ==  b'PING':
 				conexao.enviar(b':server PONG server :' + msg.split(b' ', 1)[1])
-				print(conexao, msg)
+				
 			#### passo 3 ####
 			if initial_msg == b'NICK':
-				nick = msg.split(b' ', 1)[1].rstrip(b'\r\n').lower()
-				print(nick)
+				nick_sent = msg.split(b' ', 1)[1].rstrip(b'\r\n')
+				nick = nick_sent.lower()
+
 				###passo 4###
-				if(nick in dicionario.keys()):
-						conexao.enviar(b':server 433 * %s :Nickname is already in use\r\n' % nick)
+				if nick in dicionario.values(): # se o nick ja existe
+					if conexao in dicionario.keys(): # se o usuario estiver mudando o nick
+						apelido_antigo = dicionario[conexao]
+					else: # se for o primeiro nick do usuario
+						apelido_antigo = b'*'
+					conexao.enviar(b':server 433 %s %s :Nickname is already in use\r\n' % (apelido_antigo, nick_sent))
 						
 				else:
-					if validar_nome( nick): #verifica se o nome é valido, não pode ter o \r\n então é usado o strip
-						conexao.enviar(b':server 001 %s :Welcome\r\n' % nick) #envia duas mensagens para mostrar que foi conectado, houve tratamento do \r\n
-						conexao.enviar(b':server 422 %s :MOTD File is missing\r\n' % nick)
+					if validar_nome(nick): # verifica se o nome é valido
+						if conexao in dicionario.keys(): # se o usuario estiver mudando o nick
+							conexao.enviar(b':%s NICK %s\r\n' % (dicionario[conexao], nick))
+							dicionario[conexao] = nick
+						
+						else: # se for o primeiro nick do usuario
+							dicionario[conexao] = nick
+							conexao.enviar(b':server 001 %s :Welcome\r\n' % nick) #envia mensagem de sucesso
+							conexao.enviar(b':server 422 %s :MOTD File is missing\r\n' % nick)
 
-					else: #envia mensagem para o caso de que não for conectado corretamente
+					else: # envia mensagem para o caso de que não for conectado corretamente
 						conexao.enviar(b':server 432 * %s :Erroneous nickname\r\n' % nick)
-					dicionario[nick.lower()] = conexao
+						
+			#### passo 5 ####
+			if initial_msg == b'PRIVMSG':
+				print('teste')
+				
 									
 						
 
