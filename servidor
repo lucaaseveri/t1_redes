@@ -53,7 +53,7 @@ def dados_recebidos(conexao, dados):
 				nick_sent = msg.split(b' ', 1)[1].rstrip(b'\r\n')
 				nick = nick_sent.lower()
 
-				###passo 4###
+				### passo 4 ###
 				if nick in dicionario.values(): # se o nick ja existe
 					if conexao in dicionario.keys(): # se o usuario estiver mudando o nick
 						apelido_antigo = dicionario[conexao]
@@ -77,7 +77,18 @@ def dados_recebidos(conexao, dados):
 						
 			#### passo 5 ####
 			if initial_msg == b'PRIVMSG':
-				print('teste')
+				destinatario_apelido = msg.split(b' ')[1].lower()
+				
+				if destinatario_apelido in dicionario.values():
+					
+					for key, value in dicionario.items():
+						if value == destinatario_apelido:
+							destinatario = key
+
+					conteudo = msg.split(b' ')[2]
+					
+					destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario[conexao], dicionario[destinatario], conteudo))
+
 				
 									
 						
