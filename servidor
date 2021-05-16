@@ -14,11 +14,47 @@ def sair(conexao):
 
 
 def dados_recebidos(conexao, dados):
-    if dados == b'':
-        return sair(conexao)
-    if dados.split(b' ', 1)[0] ==  b'PING':
-    	conexao.enviar(b':server PONG server :' + dados.split(b' ', 1)[1])
-    print(conexao, dados)
+	cont_linhas = 0
+
+	if dados == b'':
+        	return sair(conexao)
+       
+       
+	##### Tratamento dos dados
+	
+	for i in range(len(dados)): # Linhas que contem \n
+		if dados[i] == 10:
+			cont_linhas = cont_linhas + 1 
+	
+	d = b'\n'
+	mensagens = dados.split(d) # Separacao em uma lista
+	
+	
+	if b'' in mensagens:
+		mensagens.remove(b'') # Limpeza de string vazias na lista
+
+	
+	for i in range(cont_linhas): # Voltando o \n apos o split
+		mensagens[i] = mensagens[i] + d	
+
+	for mensagem in mensagens:	
+		if mensagem[-1] == 10: # Verifica se acabou a linha
+			dados_residuais = conexao.recuperar_dados()
+			msg = dados_residuais + mensagem
+
+			initial_msg = msg.split(b' ', 1)[0]
+			
+			if initial_msg ==  b'PING':
+				conexao.enviar(b':server PONG server :' + msg.split(b' ', 1)[1])
+				print(conexao, msg)
+
+		else:
+			dados_residuais = conexao.recuperar_dados()
+			msg = dados_residuais + mensagem
+			
+			conexao.guardar_dados(msg)
+		    
+    
 
 
 def conexao_aceita(conexao):

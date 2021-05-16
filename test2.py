@@ -27,6 +27,7 @@ s.sendall(b'PING %s\r\nPING %s\r\n' % (args1, args2))
 assert recvline(s) == b':server PONG server :%s\r\n' % args1
 assert recvline(s) == b':server PONG server :%s\r\n' % args2
 
+
 # Verifica se o servidor lida corretamente com dados residuais em situação de múltiplos comandos
 args1 = base64.b32encode(os.urandom(16))
 args2 = base64.b32encode(os.urandom(16))
