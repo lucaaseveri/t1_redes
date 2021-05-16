@@ -49,10 +49,10 @@ def dados_recebidos(conexao, dados):
 				print(conexao, msg)
 			#### passo 3 ####
 			if initial_msg == b'NICK':
-				if validar_nome( msg.split(b' ', 1)[1].rstrip(b'\r\n')):
-					conexao.enviar(b':server 001 %s :Welcome\r\n' % msg.split(b' ', 1)[1].rstrip(b'\r\n'))
+				if validar_nome( msg.split(b' ', 1)[1].rstrip(b'\r\n')): #verifica se o nome é valido, não pode ter o \r\n então é usado o strip
+					conexao.enviar(b':server 001 %s :Welcome\r\n' % msg.split(b' ', 1)[1].rstrip(b'\r\n')) #envia duas mensagens para mostrar que foi conectado, houve tratamento do \r\n
 					conexao.enviar(b':server 422 %s :MOTD File is missing\r\n' % msg.split(b' ', 1)[1].rstrip(b'\r\n'))
-				else:
+				else: #envia mensagem para o caso de que não for conectado corretamente
 					conexao.enviar(b':server 432 * %s :Erroneous nickname\r\n' % msg.split(b' ', 1)[1].rstrip(b'\r\n'))
 
 		else:
