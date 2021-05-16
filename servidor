@@ -3,7 +3,7 @@ import asyncio
 from tcp import Servidor
 import re
 
-dicionario = {} #passo 4
+dicionario_nicks = {} #passo 4
 
 def validar_nome(nome):
     return re.match(br'^[a-zA-Z][a-zA-Z0-9_-]*$', nome) is not None
@@ -54,21 +54,21 @@ def dados_recebidos(conexao, dados):
 				nick = nick_sent.lower()
 
 				### passo 4 ###
-				if nick in dicionario.values(): # se o nick ja existe
-					if conexao in dicionario.keys(): # se o usuario estiver mudando o nick
-						apelido_antigo = dicionario[conexao]
+				if nick in dicionario_nicks.values(): # se o nick ja existe
+					if conexao in dicionario_nicks.keys(): # se o usuario estiver mudando o nick
+						apelido_antigo = dicionario_nicks[conexao]
 					else: # se for o primeiro nick do usuario
 						apelido_antigo = b'*'
 					conexao.enviar(b':server 433 %s %s :Nickname is already in use\r\n' % (apelido_antigo, nick_sent))
 						
 				else:
 					if validar_nome(nick): # verifica se o nome é valido
-						if conexao in dicionario.keys(): # se o usuario estiver mudando o nick
-							conexao.enviar(b':%s NICK %s\r\n' % (dicionario[conexao], nick))
-							dicionario[conexao] = nick
+						if conexao in dicionario_nicks.keys(): # se o usuario estiver mudando o nick
+							conexao.enviar(b':%s NICK %s\r\n' % (dicionario_nicks[conexao], nick))
+							dicionario_nicks[conexao] = nick
 						
 						else: # se for o primeiro nick do usuario
-							dicionario[conexao] = nick
+							dicionario_nicks[conexao] = nick
 							conexao.enviar(b':server 001 %s :Welcome\r\n' % nick) #envia mensagem de sucesso
 							conexao.enviar(b':server 422 %s :MOTD File is missing\r\n' % nick)
 
@@ -79,15 +79,15 @@ def dados_recebidos(conexao, dados):
 			if initial_msg == b'PRIVMSG':
 				destinatario_apelido = msg.split(b' ')[1].lower()
 				
-				if destinatario_apelido in dicionario.values():
+				if destinatario_apelido in dicionario_nicks.values():
 					
-					for key, value in dicionario.items():
+					for key, value in dicionario_nicks.items():
 						if value == destinatario_apelido:
 							destinatario = key
 
 					conteudo = msg.split(b' ')[2]
 					
-					destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario[conexao], dicionario[destinatario], conteudo))
+					destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario_nicks[conexao], dicionario_nicks[destinatario], conteudo))
 
 				
 									
