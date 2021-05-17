@@ -8,6 +8,9 @@ dicionario_nicks = {} #passo 4
 # key: canal, value: lista_conexao
 dicionario_canais = {} #passo 6
 
+#lista de nomes no canal
+lista_nicks = []
+
 def validar_nome(nome):
     return re.match(br'^[a-zA-Z][a-zA-Z0-9_-]*$', nome) is not None
 
@@ -22,8 +25,11 @@ def converttostr(input_seq, seperator):
 	return final_str
 
 def sair(conexao):
-    print(conexao, 'conexão fechada')
-    conexao.fechar()
+	### passo 8 ###
+	#conexao.enviar(b':%s QUIT' % dicionario_nicks.values())
+	print(conexao, 'conexão fechada')
+    
+	conexao.fechar()
 
 
 def dados_recebidos(conexao, dados):
@@ -90,6 +96,7 @@ def dados_recebidos(conexao, dados):
 			#### passo 5 ####
 			if initial_msg == b'PRIVMSG':
 				destinatario_apelido = msg.split(b' ')[1].lower()
+			
 				
 				if destinatario_apelido[0] == 35: # Se for mensagem para grupo
 					conteudo = msg.split(b' ')[2]
@@ -97,6 +104,7 @@ def dados_recebidos(conexao, dados):
 					for key, value in dicionario_canais.items():
 						if key == destinatario_apelido: 
 							for destinatario in value:
+								print('chegou aqui 1 vez')
 								if destinatario != conexao:
 									destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario_nicks[conexao], key, conteudo))
 									
@@ -113,6 +121,7 @@ def dados_recebidos(conexao, dados):
 						destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario_nicks[conexao], dicionario_nicks[destinatario], conteudo))
 						
 			#### passo 6 ####
+
 			if initial_msg == b'JOIN':
 				canal = msg.split(b' ')[1].lower()
 				validacao = False
@@ -152,11 +161,11 @@ def dados_recebidos(conexao, dados):
 						conexao.enviar(b':%s JOIN :%s\r\n' % (dicionario_nicks[conexao], nome_canal))
 					
 					lista_conexoes = list(dicionario_canais[nome_canal])
-					lista_nicks = []
 					
 					# Criando lista de nicks que estao no canal para enviar no server 353
 					for conex in lista_conexoes:
-						lista_nicks.append(dicionario_nicks[conex])
+						if dicionario_nicks[conex] not in lista_nicks:	
+							lista_nicks.append(dicionario_nicks[conex])
 					
 					separador = ' '
 					conexao.enviar(b':server 353 %s = %s :%s\r\n' % (dicionario_nicks[conexao], nome_canal, converttostr(lista_nicks, separador)))
@@ -167,8 +176,23 @@ def dados_recebidos(conexao, dados):
 					
 				else:
 					conexao.enviar(b':server 403 %s :No such channel.' % canal[:-2])
-									
-						
+			
+			### passo 7 ###
+			if initial_msg == b'PART':
+				canal = msg.split(b' ')[1].lower().rstrip(b'\r\n')
+				
+				if canal in dicionario_canais.keys():
+				
+					for key, value in dicionario_canais.items():
+							if key == canal:
+								for destinatario in value:	
+									if destinatario == conexao:
+										destinatario.enviar(b':%s PART %s\r\n' % (dicionario_nicks[conexao], canal))
+										dicionario_canais[key].remove(destinatario)
+										break
+								for destinatario in value:
+									destinatario.enviar(b':%s PART %s\r\n' % (dicionario_nicks[conexao], canal))
+											
 
 		else:
 			dados_residuais = conexao.recuperar_dados()
