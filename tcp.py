@@ -26,12 +26,7 @@ class Conexao:
 
     def fechar(self):
         asyncio.get_event_loop().remove_reader(self.s)
-        self.s.close()
-	
-    def guardar_dados(self, dados):
-    	self.dados_residuais = dados
+        self.s.close()	
     	
-    def recuperar_dados(self):
-    	retorno = self.dados_residuais
-    	self.dados_residuais = b''
-    	return retorno
+    	
+    	

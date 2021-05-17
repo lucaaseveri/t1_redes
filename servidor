@@ -57,8 +57,8 @@ def dados_recebidos(conexao, dados):
 
 	for mensagem in mensagens:	
 		if mensagem[-1] == 10: # Verifica se acabou a linha
-			dados_residuais = conexao.recuperar_dados()
-			msg = dados_residuais + mensagem
+			msg = conexao.dados_residuais + mensagem
+			conexao.dados_residuais = b''
 
 			initial_msg = msg.split(b' ', 1)[0]
 			
@@ -195,10 +195,8 @@ def dados_recebidos(conexao, dados):
 											
 
 		else:
-			dados_residuais = conexao.recuperar_dados()
-			msg = dados_residuais + mensagem
+			conexao.dados_residuais = conexao.dados_residuais + mensagem
 			
-			conexao.guardar_dados(msg)
 		    
     
 
