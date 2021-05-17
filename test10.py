@@ -56,6 +56,7 @@ assert recvline(s2).startswith(b':%s QUIT' % nick1)
 s3.sendall(b'JOIN %s\r\n' % ch1)
 assert recvline(s2) == b':%s JOIN :%s\r\n' % (nick3, ch1)
 assert recvline(s3) == b':%s JOIN :%s\r\n' % (nick3, ch1)
+print(b':server 353 %s = %s :%s' % (nick3, ch1, b' '.join(sorted([nick2, nick3]))))
 assert recvline(s3).strip() == b':server 353 %s = %s :%s' % (nick3, ch1, b' '.join(sorted([nick2, nick3])))
 assert recvline(s3) == b':server 366 %s %s :End of /NAMES list.\r\n' % (nick3, ch1)
 

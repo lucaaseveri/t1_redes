@@ -26,17 +26,46 @@ def converttostr(input_seq, seperator):
 
 def sair(conexao):
 	### passo 8 ###
-	#conexao.enviar(b':%s QUIT' % dicionario_nicks.values())
+	
+	# Criando lista de envio de mensagem
+	lista_pessoas_canal = []
+	for key, value in dicionario_canais.items():
+		if conexao in value:
+			for pessoa in value:
+				lista_pessoas_canal.append(pessoa)
+	
+	if lista_pessoas_canal != []:
+		
+		# Dropando duplicados
+		lista_pessoas_canal = list(dict.fromkeys(lista_pessoas_canal))
+		
+		# Remover pessoa que esta saindo da lista
+		lista_pessoas_canal.remove(conexao)
+
+		
+	# Lista de canal para enviar a mensagem
+	for destinatario in lista_pessoas_canal:
+			destinatario.enviar(b':%s QUIT :Connection closed\r\n' % dicionario_nicks[conexao])
+			
+	# Eliminando conexao dos nicks
+	dicionario_nicks.pop(conexao, None)
+	
+	for key, value in dicionario_canais.items():
+		if conexao in value:
+			value.remove(conexao)	
+	
 	print(conexao, 'conexão fechada')
-    
 	conexao.fechar()
 
 
 def dados_recebidos(conexao, dados):
 	cont_linhas = 0
 
+	print(dados)
 	if dados == b'':
-        	return sair(conexao)
+		print('aaa')
+		print(conexao)
+		return sair(conexao)
        
 	##### Tratamento dos dados
 	
@@ -73,6 +102,7 @@ def dados_recebidos(conexao, dados):
 
 				### passo 4 ###
 				if nick in dicionario_nicks.values(): # se o nick ja existe
+					print('teste1')
 					if conexao in dicionario_nicks.keys(): # se o usuario estiver mudando o nick
 						apelido_antigo = dicionario_nicks[conexao]
 					else: # se for o primeiro nick do usuario
@@ -80,6 +110,7 @@ def dados_recebidos(conexao, dados):
 					conexao.enviar(b':server 433 %s %s :Nickname is already in use\r\n' % (apelido_antigo, nick_sent))
 						
 				else:
+					print('teste2')
 					if validar_nome(nick): # verifica se o nome é valido
 						if conexao in dicionario_nicks.keys(): # se o usuario estiver mudando o nick
 							conexao.enviar(b':%s NICK %s\r\n' % (dicionario_nicks[conexao], nick))
@@ -168,14 +199,15 @@ def dados_recebidos(conexao, dados):
 							lista_nicks.append(dicionario_nicks[conex])
 					
 					separador = ' '
-					conexao.enviar(b':server 353 %s = %s :%s\r\n' % (dicionario_nicks[conexao], nome_canal, converttostr(lista_nicks, separador)))
+					print(b':server 353 %s = %s :%s\r\n' % (dicionario_nicks[conexao], nome_canal, converttostr(sorted(lista_nicks), separador)))
+					conexao.enviar(b':server 353 %s = %s :%s\r\n' % (dicionario_nicks[conexao], nome_canal, converttostr(sorted(lista_nicks), separador)))
 					
 					
 					conexao.enviar(b':server 366 %s %s :End of /NAMES list.\r\n' % (dicionario_nicks[conexao], nome_canal))
 					
 					
 				else:
-					conexao.enviar(b':server 403 %s :No such channel.' % canal[:-2])
+					conexao.enviar(b':server 403 %s :No such channel.\r\n' % canal[:-2])
 			
 			### passo 7 ###
 			if initial_msg == b'PART':
@@ -195,6 +227,7 @@ def dados_recebidos(conexao, dados):
 											
 
 		else:
+		
 			conexao.dados_residuais = conexao.dados_residuais + mensagem
 			
 		    
@@ -203,6 +236,7 @@ def dados_recebidos(conexao, dados):
 
 def conexao_aceita(conexao):
     print(conexao, 'nova conexão')
+    conexao.dados_residuais = b''
     conexao.registrar_recebedor(dados_recebidos)
 
 
