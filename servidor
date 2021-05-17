@@ -91,15 +91,16 @@ def dados_recebidos(conexao, dados):
 			if initial_msg == b'PRIVMSG':
 				destinatario_apelido = msg.split(b' ')[1].lower()
 				
-				if destinatario_apelido[0] == 35:
+				if destinatario_apelido[0] == 35: # Se for mensagem para grupo
 					conteudo = msg.split(b' ')[2]
 					
 					for key, value in dicionario_canais.items():
-						if key == destinatario_apelido:
+						if key == destinatario_apelido: 
 							for destinatario in value:
 								if destinatario != conexao:
 									destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario_nicks[conexao], key, conteudo))
-				else:
+									
+				else: # Se for mensagem individual
 					if destinatario_apelido in dicionario_nicks.values():
 						
 						for key, value in dicionario_nicks.items():
@@ -116,6 +117,7 @@ def dados_recebidos(conexao, dados):
 				canal = msg.split(b' ')[1].lower()
 				validacao = False
 				
+				# Validação dos nomes
 				if canal.endswith(b'\r\n'):
 					nome_canal_limpo = canal[1:-2]
 					nome_canal = canal[:-2]
@@ -130,7 +132,9 @@ def dados_recebidos(conexao, dados):
 					validacao = True
 					
 					
+				# Se o nome foi validado
 				if validacao:
+					# Se o canal ja existir
 					if nome_canal in dicionario_canais.keys():
 					
 						dicionario_canais[nome_canal].append(conexao)
@@ -139,8 +143,10 @@ def dados_recebidos(conexao, dados):
 							if key == nome_canal:
 								for destinatario in value:
 									destinatario.enviar(b':%s JOIN :%s\r\n' % (dicionario_nicks[conexao], nome_canal))
-					
+									
+					# Se o canal ainda nao existir
 					else:
+						# Cria uma lista vazia e insere
 						dicionario_canais[nome_canal] = []
 						dicionario_canais[nome_canal].append(conexao)
 						conexao.enviar(b':%s JOIN :%s\r\n' % (dicionario_nicks[conexao], nome_canal))
@@ -148,6 +154,7 @@ def dados_recebidos(conexao, dados):
 					lista_conexoes = list(dicionario_canais[nome_canal])
 					lista_nicks = []
 					
+					# Criando lista de nicks que estao no canal para enviar no server 353
 					for conex in lista_conexoes:
 						lista_nicks.append(dicionario_nicks[conex])
 					
