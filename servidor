@@ -3,11 +3,23 @@ import asyncio
 from tcp import Servidor
 import re
 
+# key: conexao, value: nickname
 dicionario_nicks = {} #passo 4
+# key: canal, value: lista_conexao
+dicionario_canais = {} #passo 6
 
 def validar_nome(nome):
     return re.match(br'^[a-zA-Z][a-zA-Z0-9_-]*$', nome) is not None
 
+def converttostr(input_seq, seperator):
+	for i in range(len(input_seq)):
+		if i == 0:
+			final_str = b'%s ' % input_seq[i] 
+		elif i == (len(input_seq)-1):
+			final_str = final_str + (b'%s' % input_seq[i])
+		else:
+			final_str = final_str + (b'%s ' % input_seq[i])
+	return final_str
 
 def sair(conexao):
     print(conexao, 'conexão fechada')
@@ -79,17 +91,75 @@ def dados_recebidos(conexao, dados):
 			if initial_msg == b'PRIVMSG':
 				destinatario_apelido = msg.split(b' ')[1].lower()
 				
-				if destinatario_apelido in dicionario_nicks.values():
-					
-					for key, value in dicionario_nicks.items():
-						if value == destinatario_apelido:
-							destinatario = key
-
+				if destinatario_apelido[0] == 35:
 					conteudo = msg.split(b' ')[2]
 					
-					destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario_nicks[conexao], dicionario_nicks[destinatario], conteudo))
+					for key, value in dicionario_canais.items():
+						if key == destinatario_apelido:
+							for destinatario in value:
+								if destinatario != conexao:
+									destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario_nicks[conexao], key, conteudo))
+				else:
+					if destinatario_apelido in dicionario_nicks.values():
+						
+						for key, value in dicionario_nicks.items():
+							if value == destinatario_apelido:
+								destinatario = key
+								break
 
+						conteudo = msg.split(b' ')[2]
+						
+						destinatario.enviar(b':%s PRIVMSG %s %s' % (dicionario_nicks[conexao], dicionario_nicks[destinatario], conteudo))
+						
+			#### passo 6 ####
+			if initial_msg == b'JOIN':
+				canal = msg.split(b' ')[1].lower()
+				validacao = False
 				
+				if canal.endswith(b'\r\n'):
+					nome_canal_limpo = canal[1:-2]
+					nome_canal = canal[:-2]
+				elif canal.endswith(b'\n'):
+					nome_canal_limpo = canal[1:-1]
+					nome_canal = canal[:-1]
+				else:
+					nome_canal_limpo = canal[1:]
+					nome_canal = canal
+				
+				if (canal[0] == 35) and (validar_nome(nome_canal_limpo)):
+					validacao = True
+					
+					
+				if validacao:
+					if nome_canal in dicionario_canais.keys():
+					
+						dicionario_canais[nome_canal].append(conexao)
+
+						for key, value in dicionario_canais.items():
+							if key == nome_canal:
+								for destinatario in value:
+									destinatario.enviar(b':%s JOIN :%s\r\n' % (dicionario_nicks[conexao], nome_canal))
+					
+					else:
+						dicionario_canais[nome_canal] = []
+						dicionario_canais[nome_canal].append(conexao)
+						conexao.enviar(b':%s JOIN :%s\r\n' % (dicionario_nicks[conexao], nome_canal))
+					
+					lista_conexoes = list(dicionario_canais[nome_canal])
+					lista_nicks = []
+					
+					for conex in lista_conexoes:
+						lista_nicks.append(dicionario_nicks[conex])
+					
+					separador = ' '
+					conexao.enviar(b':server 353 %s = %s :%s\r\n' % (dicionario_nicks[conexao], nome_canal, converttostr(lista_nicks, separador)))
+					
+					
+					conexao.enviar(b':server 366 %s %s :End of /NAMES list.\r\n' % (dicionario_nicks[conexao], nome_canal))
+					
+					
+				else:
+					conexao.enviar(b':server 403 %s :No such channel.' % canal[:-2])
 									
 						
 
